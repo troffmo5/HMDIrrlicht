@@ -53,8 +53,8 @@ HMDStereoRender::HMDStereoRender(IrrlichtDevice *device, int width, int height)
   
   // Default values
   _distCallb.c = -8.1;
-  _eyeSeparation = 5.6;
-  _FOV = 1.04;
+  _eyeSeparation = 1.6;
+  _FOV = 1.36;
 
   // Create render textures
   _driver = device->getVideoDriver();
@@ -97,6 +97,7 @@ HMDStereoRender::HMDStereoRender(IrrlichtDevice *device, int width, int height)
   _camLeft->setPosition(vector3df(-_eyeSeparation/2,0,0));
   _camLeft->setTarget(_targetLeft->getPosition());
   _camLeft->setFOV(_FOV);
+  _camLeft->setAspectRatio(float(_hwidth)/_height);
   //_camLeft->bindTargetAndRotation(true);
 
   _targetRight = smgr->addEmptySceneNode(_egoNode);
@@ -106,6 +107,7 @@ HMDStereoRender::HMDStereoRender(IrrlichtDevice *device, int width, int height)
   _camRight->setPosition(vector3df(_eyeSeparation/2,0,0));
   _camRight->setTarget(_targetRight->getPosition());
   _camRight->setFOV(_FOV);
+  _camRight->setAspectRatio(float(_hwidth)/_height);
   //camRight->bindTargetAndRotation(true);
   
 }
