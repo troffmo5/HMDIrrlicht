@@ -34,7 +34,7 @@ float eyeSeparation = 5.6;
 float FOV = 1.04;
 float mouseSpeed = 40.0f;
 float walkSpeed = 3.0f;
-float distC = -13; //-8.1
+float distortion = -8.1;
 
 class MyEventReceiver : public IEventReceiver
 {
@@ -170,6 +170,9 @@ int main(){
 
   HMDStereoRender renderer(device, SCREEN_WIDTH, SCREEN_HEIGHT);
   receiver.renderer = &renderer;
+  renderer.setEyeSeparation(eyeSeparation);
+  renderer.setFOV(FOV);
+  renderer.setDistortion(distortion);
 
   // Create world
 
