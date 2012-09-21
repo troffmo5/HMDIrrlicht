@@ -52,8 +52,8 @@ public:
             if (rot.Y > 360) rot.Y -= 360;
 
             rot.X -= (pos.Y - 0.5f) * mouseSpeed;
-            if (rot.X < 0) rot.X += 360;
-            if (rot.X > 360) rot.X -= 360;
+            if (rot.X < -89) rot.X = -89;
+            if (rot.X > 89) rot.X = 89;
             
             renderer->setEgoRotation(rot);
             cursor->setPosition(0.5f, 0.5f);
