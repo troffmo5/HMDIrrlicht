@@ -24,10 +24,12 @@ class distorsionCallback: public irr::video::IShaderConstantSetCallBack
 { 
 public:
   float c;
+  int left;
   virtual void OnSetConstants(irr::video::IMaterialRendererServices* services, irr::s32 userData) 
   { 
     irr::video::IVideoDriver* driver = services->getVideoDriver();
     services->setPixelShaderConstant("c", reinterpret_cast<irr::f32*>(&c),1);
+    services->setPixelShaderConstant("left", &left,1);
   }
 };
 
@@ -46,14 +48,7 @@ public:
   float eyeSeparation();
   void setEyeSeparation(float eyeSeparation);
 
-  irr::core::vector3df egoPosition();
-  void setEgoPosition(irr::core::vector3df pos);
-
-  irr::core::vector3df egoRotation();
-  void setEgoRotation(irr::core::vector3df rot);
-
   void drawAll(irr::scene::ISceneManager* smgr);
-
 
 protected:
   void updateTargets();
@@ -63,17 +58,15 @@ private:
   int _hwidth;
   int _height;
   irr::video::IVideoDriver* _driver;
+
   irr::video::ITexture* _renderTexLeft;
   irr::video::ITexture* _renderTexRight;
   distorsionCallback _distCallb;
   irr::video::SMaterial _renderMaterial;
   irr::video::S3DVertex _planeVertices[4];
   irr::u16 _planeIndices[6];
-  irr::scene::ISceneNode* _egoNode;
-  irr::scene::ICameraSceneNode* _camLeft;
-  irr::scene::ICameraSceneNode* _camRight;
-  irr::scene::ISceneNode* _targetLeft;
-  irr::scene::ISceneNode* _targetRight;
+
+  irr::scene::ICameraSceneNode* _cam;
   float _eyeSeparation;
   float _FOV;
 };

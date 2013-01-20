@@ -17,19 +17,23 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "HMDStereoRender.h"
 
+#include <iostream>
+
 using namespace irr;
 using namespace core;
 using namespace scene;
 using namespace video;
+using namespace std;
 
 static const char* vertexShader =
+"uniform int left;"
 "void main(void)"
 "{"
 "  vec2 Position;"
-"  Position.xy = sign(gl_Vertex.xy);"
+"  Position.xy = gl_Vertex.xy;"
+"  if (left) Position.x = clamp(Position.x, -1, 0); else Position.x = clamp(Position.x, 0, 1);"
 "  gl_Position = vec4(Position.xy, 0.0, 1.0);"
-"  Position.xy *= -1;"
-"  gl_TexCoord[0].st = 1.0-(Position.xy * 0.5 + 0.5);"
+"  gl_TexCoord[0].st = gl_MultiTexCoord0;"
 "}";
 
 static const char *fragShader =
@@ -46,13 +50,17 @@ static const char *fragShader =
 "    gl_FragColor = texture2D(tex, newNormPos);"
 "}";
 
+
+static void pV(const char* name, const vector3df& v) {
+  cout << name << ": " << v.X << ", " << v.Y << ", " << v.Z << endl;
+}
+
 HMDStereoRender::HMDStereoRender(IrrlichtDevice *device, int width, int height) 
  : _width(width), _height(height), _hwidth(width>>1)
  {
-  
-  
   // Default values
   _distCallb.c = -8.1;
+  _distCallb.left = 0;
   _eyeSeparation = 1.6;
   _FOV = 1.36;
 
@@ -64,18 +72,16 @@ HMDStereoRender::HMDStereoRender(IrrlichtDevice *device, int width, int height)
   // Create shader material
   _renderMaterial.Wireframe = false;
   _renderMaterial.Lighting = false;
-  //_renderMaterial.setTexture(0, _renderTexLeft);
   _renderMaterial.TextureLayer[0].TextureWrapU = ETC_CLAMP;
   _renderMaterial.TextureLayer[0].TextureWrapV = ETC_CLAMP;
 
   IGPUProgrammingServices* gpu = _driver->getGPUProgrammingServices(); 
   _renderMaterial.MaterialType=(E_MATERIAL_TYPE)gpu->addHighLevelShaderMaterial(vertexShader, "main", EVST_VS_1_1, fragShader, "main", EPST_PS_1_1, &_distCallb, EMT_SOLID, 1);
 
-  // Create render plane
-  _planeVertices[0] = video::S3DVertex(-1.0f, -1.0f, 0.0f,1,1,0, video::SColor(255,0,255,255), 0.0f, 1.0f);
-  _planeVertices[1] = video::S3DVertex(-1.0f,  1.0f, 0.0f,1,1,0, video::SColor(255,0,255,255), 0.0f, 0.0f);
-  _planeVertices[2] = video::S3DVertex( 1.0f,  1.0f, 0.0f,1,1,0, video::SColor(255,0,255,255), 1.0f, 0.0f);
-  _planeVertices[3] = video::S3DVertex( 1.0f, -1.0f, 0.0f,1,1,0, video::SColor(255,0,255,255), 1.0f, 1.0f);
+  _planeVertices[0] = video::S3DVertex(-1.0f, -1.0f, 0.0f,1,1,0, video::SColor(255,0,255,255), 0.0f, 0.0f);
+  _planeVertices[1] = video::S3DVertex(-1.0f,  1.0f, 0.0f,1,1,0, video::SColor(255,0,255,255), 0.0f, 1.0f);
+  _planeVertices[2] = video::S3DVertex( 1.0f,  1.0f, 0.0f,1,1,0, video::SColor(255,0,255,255), 1.0f, 1.0f);
+  _planeVertices[3] = video::S3DVertex( 1.0f, -1.0f, 0.0f,1,1,0, video::SColor(255,0,255,255), 1.0f, 0.0f);
 
   _planeIndices[0] = 0;
   _planeIndices[1] = 1;
@@ -87,29 +93,7 @@ HMDStereoRender::HMDStereoRender(IrrlichtDevice *device, int width, int height)
   // Create cameras
   ISceneManager* smgr = device->getSceneManager();
 
-  _egoNode = smgr->addEmptySceneNode();
-  _egoNode->setPosition(vector3df(0,0,0));
-
-  _targetLeft = smgr->addEmptySceneNode(_egoNode);
-  _targetLeft->setPosition(vector3df(-_eyeSeparation/2,0,-1));
-
-  _camLeft = smgr->addCameraSceneNode(_egoNode);
-  _camLeft->setPosition(vector3df(-_eyeSeparation/2,0,0));
-  _camLeft->setTarget(_targetLeft->getPosition());
-  _camLeft->setFOV(_FOV);
-  _camLeft->setAspectRatio(float(_hwidth)/_height);
-  //_camLeft->bindTargetAndRotation(true);
-
-  _targetRight = smgr->addEmptySceneNode(_egoNode);
-  _targetRight->setPosition(vector3df(_eyeSeparation/2,0,-1));
-
-  _camRight = smgr->addCameraSceneNode(_egoNode);
-  _camRight->setPosition(vector3df(_eyeSeparation/2,0,0));
-  _camRight->setTarget(_targetRight->getPosition());
-  _camRight->setFOV(_FOV);
-  _camRight->setAspectRatio(float(_hwidth)/_height);
-  //camRight->bindTargetAndRotation(true);
-  
+  _cam = smgr->addCameraSceneNode();
 }
 
 HMDStereoRender::~HMDStereoRender() {
@@ -130,8 +114,6 @@ float HMDStereoRender::FOV() {
 
 void HMDStereoRender::setFOV(float FOV) {
   _FOV = FOV;
-  _camLeft->setFOV(_FOV);
-  _camRight->setFOV(_FOV);
 }
 
 float HMDStereoRender::eyeSeparation() {
@@ -140,66 +122,51 @@ float HMDStereoRender::eyeSeparation() {
 
 void HMDStereoRender::setEyeSeparation(float eyeSeparation) {
   _eyeSeparation = eyeSeparation;
-  _camLeft->setPosition(vector3df(-eyeSeparation/2,0,0));
-  _camRight->setPosition(vector3df(_eyeSeparation/2,0,0));
-
-  _targetLeft->setPosition(vector3df(-_eyeSeparation/2,0,-1));
-  _targetRight->setPosition(vector3df(_eyeSeparation/2,0,-1));
-
-  updateTargets();
-}
-
-void HMDStereoRender::updateTargets() {
-  _egoNode->updateAbsolutePosition();
-  _targetLeft->updateAbsolutePosition();
-  _targetRight->updateAbsolutePosition();
-  _targetLeft->updateAbsolutePosition();
-  _camLeft->setTarget(_targetLeft->getAbsolutePosition());
-  _camRight->setTarget(_targetRight->getAbsolutePosition());   
-}
-
-vector3df HMDStereoRender::egoPosition() {
-  return _egoNode->getPosition();
-}
-
-void HMDStereoRender::setEgoPosition(irr::core::vector3df pos) {
-  _egoNode->setPosition(pos);
-  updateTargets();
-}
-
-vector3df HMDStereoRender::egoRotation() {
-  return _egoNode->getRotation();
-}
-
-void HMDStereoRender::setEgoRotation(irr::core::vector3df rot) {
-  _egoNode->setRotation(rot);
-
-  updateTargets();
 }
 
 void HMDStereoRender::drawAll(ISceneManager* smgr) {
-  // draw left camera
+  ICameraSceneNode* camera = smgr->getActiveCamera();
+
+
+  camera->setFOV(_FOV);
+  _cam->setFOV(_FOV);
+
+  // cout << ">>>>>>>>>>>>>> CAMERA" << endl;
+  // pV("target", camera->getTarget());
+  // pV("rot   ", camera->getRotation());
+  // pV("pos   ", camera->getPosition());
+
+  vector3df r = camera->getRotation();
+  vector3df tx(-_eyeSeparation, 0.0,0.0);
+  tx.rotateXZBy(-r.Y);
+  tx.rotateYZBy(-r.X);
+  tx.rotateXYBy(-r.Z);
+
+  _cam->setPosition(camera->getPosition() + tx);
+  _cam->setTarget(camera->getTarget() + tx);
+
+  // cout << ">>>>>>>>>>>>>> TMP_CAMERA" << endl;
+  // pV("target", _cam->getTarget());
+  // pV("rot   ", _cam->getRotation());
+  // pV("pos   ", _cam->getPosition());
+  // pV("tx   ", tx);
+
   _driver->setRenderTarget(_renderTexLeft, true, true, video::SColor(0,0,0,0));
-  smgr->setActiveCamera(_camLeft);
+  smgr->setActiveCamera(_cam);
   smgr->drawAll();
 
-  // draw right camera
   _driver->setRenderTarget(_renderTexRight, true, true, video::SColor(0,0,0,0));
-  smgr->setActiveCamera(_camRight);
+  smgr->setActiveCamera(camera);
   smgr->drawAll();
 
   _driver->setRenderTarget(0);
-
-  // Draw left view
+  _distCallb.left = 1;
   _renderMaterial.setTexture(0, _renderTexLeft);
   _driver->setMaterial(_renderMaterial);
+  _driver->drawIndexedTriangleList(_planeVertices, 4, _planeIndices, 2);
 
-  _driver->setViewPort(rect<s32>(0, 0, _hwidth, _height));
-  _driver->drawIndexedTriangleList(_planeVertices, 4, _planeIndices, 2); 
-
-  // Draw right view
+  _distCallb.left = 0;
   _renderMaterial.setTexture(0, _renderTexRight);
   _driver->setMaterial(_renderMaterial);
-  _driver->setViewPort(rect<s32>(_hwidth, 0, _width, _height));
   _driver->drawIndexedTriangleList(_planeVertices, 4, _planeIndices, 2);
 }

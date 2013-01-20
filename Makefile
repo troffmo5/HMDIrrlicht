@@ -1,4 +1,4 @@
-CC=g++
+CC=clang++
 CFLAGS=-I/usr/include/irrlicht
 LDFLAGS=-lIrrlicht
 

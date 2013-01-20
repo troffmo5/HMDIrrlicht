@@ -1,4 +1,5 @@
 /*
+/*
 Copyright (C) 2012 Luca Siciliano
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
@@ -40,81 +41,11 @@ class MyEventReceiver : public IEventReceiver
 {
 public:
    bool OnEvent(const SEvent& event)
-   {
-      if (event.EventType == EET_MOUSE_INPUT_EVENT) {
-        if (event.MouseInput.Event == EMIE_MOUSE_MOVED) {
-          vector2df pos = cursor->getRelativePosition();
-          if (pos.X != 0.5f || pos.Y != 0.5f) {
-            vector3df rot = renderer->egoRotation();
-            
-            rot.Y += (pos.X - 0.5f) * mouseSpeed;
-            if (rot.Y < 0) rot.Y += 360;
-            if (rot.Y > 360) rot.Y -= 360;
-
-            rot.X -= (pos.Y - 0.5f) * mouseSpeed;
-            if (rot.X < -89) rot.X = -89;
-            if (rot.X > 89) rot.X = 89;
-            
-            renderer->setEgoRotation(rot);
-            cursor->setPosition(0.5f, 0.5f);
-           }
-
-        }
-        
-      }
-     
+   {   
       if (event.EventType == EET_KEY_INPUT_EVENT && event.KeyInput.PressedDown) {
         if (event.KeyInput.Key == KEY_ESCAPE)
         {
           device->closeDevice();
-          return true;
-        }    
-        else if (event.KeyInput.Key == KEY_UP) {
-          vector3df delta(0.0f, 0.0f, -walkSpeed);
-          vector3df rot = renderer->egoRotation();
-          delta.rotateYZBy(rot.X);
-          delta.rotateXZBy(-rot.Y);
-          renderer->setEgoPosition(renderer->egoPosition()+delta);
-          return true;
-        }
-        else if (event.KeyInput.Key == KEY_DOWN) {
-          vector3df delta(0.0f, 0.0f, walkSpeed);
-          vector3df rot = renderer->egoRotation();
-          delta.rotateYZBy(rot.X);
-          delta.rotateXZBy(-rot.Y);
-          renderer->setEgoPosition(renderer->egoPosition()+delta);
-          return true;
-        }
-        else if (event.KeyInput.Key == KEY_LEFT) {
-          vector3df delta(walkSpeed, 0.0f, 0.0f);
-          vector3df rot = renderer->egoRotation();
-          delta.rotateYZBy(rot.X);
-          delta.rotateXZBy(-rot.Y);
-          renderer->setEgoPosition(renderer->egoPosition()+delta);
-          return true;
-        }
-        else if (event.KeyInput.Key == KEY_RIGHT) {
-          vector3df delta(-walkSpeed, 0.0f, 0.0f);
-          vector3df rot = renderer->egoRotation();
-          delta.rotateYZBy(rot.X);
-          delta.rotateXZBy(-rot.Y);
-          renderer->setEgoPosition(renderer->egoPosition()+delta);
-          return true;
-        }
-        else if (event.KeyInput.Key == KEY_KEY_A) {
-          vector3df delta(0.0f, walkSpeed, 0.0f);
-          vector3df rot = renderer->egoRotation();
-          delta.rotateYZBy(rot.X);
-          delta.rotateXZBy(-rot.Y);
-          renderer->setEgoPosition(renderer->egoPosition()+delta);
-          return true;
-        }
-        else if (event.KeyInput.Key == KEY_KEY_Z) {
-          vector3df delta(0.0f, -walkSpeed, 0.0f);
-          vector3df rot = renderer->egoRotation();
-          delta.rotateYZBy(rot.X);
-          delta.rotateXZBy(-rot.Y);
-          renderer->setEgoPosition(renderer->egoPosition()+delta);
           return true;
         }
         else if (event.KeyInput.Key == KEY_KEY_S) {
@@ -175,6 +106,7 @@ int main(){
   renderer.setDistortion(distortion);
 
   // Create world
+  smgr->addCameraSceneNodeFPS();
 
   // load the quake map
   device->getFileSystem()->addZipFileArchive("./map-20kdm2.pk3");
