@@ -32,10 +32,6 @@ Arrows : Move forward and sideward
 A,Z : move up & down
 ESC : quit
 
-S,X: increase/decrease eye separation
-D,C: increase/decrease distorsion
-F,V: increase/decrease field of vision
-
 Licence
 -------------
 MIT Licence
