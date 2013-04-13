@@ -24,6 +24,8 @@ and copy them into the executable directory:
 then run:
 ./HMDTest
 
+for fullscreen:
+./HMDTest -f
 
 Commands
 ----------------

@@ -53,7 +53,10 @@ public:
 };
 
 
-int main(){
+int main(int argc, char* argv[]){
+  // Check fullscreen
+  for (int i=1;i<argc;i++) fullscreen |= !strcmp("-f", argv[i]);
+
   MyEventReceiver receiver;
   IrrlichtDevice *device = createDevice(EDT_OPENGL, dimension2d<u32>(SCREEN_WIDTH, SCREEN_HEIGHT), 16, fullscreen, false, vsync, &receiver);
   receiver.device = device;
