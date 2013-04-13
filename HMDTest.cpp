@@ -26,15 +26,13 @@ using namespace io;
 using namespace gui;
 
 // Configuration
+
 int SCREEN_WIDTH = 1280;
 int SCREEN_HEIGHT = 800;
 bool fullscreen = false;
 bool vsync = true;
-float eyeSeparation = 5.6;
-float FOV = 1.04;
 float mouseSpeed = 40.0f;
 float walkSpeed = 3.0f;
-float distortion = -8.1;
 
 class MyEventReceiver : public IEventReceiver
 {
@@ -47,42 +45,10 @@ public:
           device->closeDevice();
           return true;
         }
-        else if (event.KeyInput.Key == KEY_KEY_S) {
-          renderer->setEyeSeparation(renderer->eyeSeparation() + 0.2);
-          printf("eye separation: %f\n", renderer->eyeSeparation());
-
-          return true;
-        }
-        else if (event.KeyInput.Key == KEY_KEY_X) {
-          renderer->setEyeSeparation(renderer->eyeSeparation() - 0.2);
-          printf("eye separation: %f\n", renderer->eyeSeparation());
-          return true;
-        }
-        else if (event.KeyInput.Key == KEY_KEY_F) {
-          renderer->setFOV(renderer->FOV() + 0.005);
-          printf("FOV: %f\n", renderer->FOV());
-          return true;
-        }
-        else if (event.KeyInput.Key == KEY_KEY_V) {
-          renderer->setFOV(renderer->FOV() - 0.005);
-          printf("FOV: %f\n", renderer->FOV());
-          return true;
-        }
-        else if (event.KeyInput.Key == KEY_KEY_D) {
-          renderer->setDistortion(renderer->distortion() + 0.1);
-          printf("distortion: %f\n", renderer->distortion());
-          return true;
-        }
-        else if (event.KeyInput.Key == KEY_KEY_C) {
-          renderer->setDistortion(renderer->distortion() - 0.1);
-          printf("distortion: %f\n", renderer->distortion());
-          return true;
-        }        
       }
       return false;
    }
    IrrlichtDevice* device;
-   HMDStereoRender* renderer;
    ICursorControl* cursor;
 };
 
@@ -98,12 +64,22 @@ int main(){
   IGUIEnvironment* guienv = device->getGUIEnvironment();
   IGPUProgrammingServices* gpu = driver->getGPUProgrammingServices();
 
-  HMDStereoRender renderer(device, SCREEN_WIDTH, SCREEN_HEIGHT);
-  receiver.renderer = &renderer;
-  renderer.setEyeSeparation(eyeSeparation);
-  renderer.setFOV(FOV);
-  renderer.setDistortion(distortion);
+  HMDDescriptor HMD;
+  // Parameters from the Oculus Rift DK1
+  HMD.hResolution = 1280;
+  HMD.vResolution = 800;
+  HMD.hScreenSize = 0.14976;
+  HMD.vScreenSize = 0.0936;
+  HMD.interpupillaryDistance = 0.064;
+  HMD.lensSeparationDistance = 0.064;
+  HMD.eyeToScreenDistance = 0.041;
+  HMD.distortionK[0] = 1.0;
+  HMD.distortionK[1] = 0.22;
+  HMD.distortionK[2] = 0.24;
+  HMD.distortionK[3] = 0.0;
 
+  HMDStereoRender renderer(device, HMD, 10);
+  
   // Create world
   smgr->addCameraSceneNodeFPS();
 

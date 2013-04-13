@@ -15,60 +15,75 @@ BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CON
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef __HMD_STEREO_RENDERER__
-#define __HMD_STEREO_RENDERER__
+#ifndef __HMD_STEREO_RENDER__
+#define __HMD_STEREO_RENDER__
 
 #include <irrlicht.h>
 
-class distorsionCallback: public irr::video::IShaderConstantSetCallBack 
-{ 
-public:
-  float c;
-  int left;
-  virtual void OnSetConstants(irr::video::IMaterialRendererServices* services, irr::s32 userData) 
-  { 
-    irr::video::IVideoDriver* driver = services->getVideoDriver();
-    services->setPixelShaderConstant("c", reinterpret_cast<irr::f32*>(&c),1);
-    services->setPixelShaderConstant("left", &left,1);
-  }
+struct HMDDescriptor 
+{
+  int hResolution;
+  int vResolution;
+  float hScreenSize;
+  float vScreenSize;
+  float interpupillaryDistance;
+  float lensSeparationDistance;
+  float eyeToScreenDistance;
+  float distortionK[4];
 };
 
 class HMDStereoRender
 {
 public:
-  HMDStereoRender(irr::IrrlichtDevice *device, int width, int height);
+  HMDStereoRender(irr::IrrlichtDevice *device, HMDDescriptor HMD, irr::f32 worldScale = 1.0);
   ~HMDStereoRender();
 
-  float distortion();
-  void setDistortion(float factor);
+  HMDDescriptor getHMD(); 
+  void setHMD(HMDDescriptor HMD);
 
-  float FOV();
-  void setFOV(float FOV);
-
-  float eyeSeparation();
-  void setEyeSeparation(float eyeSeparation);
+  irr::f32 getWorldScale(); 
+  void setWorldScale(irr::f32 worldScale);
 
   void drawAll(irr::scene::ISceneManager* smgr);
 
-protected:
-  void updateTargets();
-
-private:
-  int _width;
-  int _hwidth;
-  int _height;
+private:  
   irr::video::IVideoDriver* _driver;
+  irr::video::ITexture* _renderTexture;
+  irr::scene::ISceneManager* _smgr;
 
-  irr::video::ITexture* _renderTexLeft;
-  irr::video::ITexture* _renderTexRight;
-  distorsionCallback _distCallb;
+  HMDDescriptor _HMD;
+  irr::f32 _worldScale;
+  irr::core::matrix4 _projectionLeft;
+  irr::core::matrix4 _projectionRight;
+  irr::f32 _eyeSeparation;
+  irr::f32 _lensShift;
+
+  irr::core::rect<irr::s32> _viewportLeft;
+  irr::core::rect<irr::s32> _viewportRight;
+
+  irr::scene::ICameraSceneNode* _pCamera;
+
   irr::video::SMaterial _renderMaterial;
   irr::video::S3DVertex _planeVertices[4];
   irr::u16 _planeIndices[6];
+  irr::ITimer* _timer;
 
-  irr::scene::ICameraSceneNode* _cam;
-  float _eyeSeparation;
-  float _FOV;
+  class OculusDistorsionCallback: public irr::video::IShaderConstantSetCallBack 
+  { 
+  public:
+    irr::f32 scale[2];
+    irr::f32 scaleIn[2];
+    irr::f32 lensCenter[2];
+    irr::f32 hmdWarpParam[4];
+    virtual void OnSetConstants(irr::video::IMaterialRendererServices* services, irr::s32 userData) 
+    { 
+      irr::video::IVideoDriver* driver = services->getVideoDriver();
+      services->setPixelShaderConstant("scale", scale, 2);
+      services->setPixelShaderConstant("scaleIn", scaleIn ,2);
+      services->setPixelShaderConstant("lensCenter", lensCenter ,2);
+      services->setPixelShaderConstant("hmdWarpParam", hmdWarpParam ,4);
+    }
+  };
+  OculusDistorsionCallback _distortionCB;
 };
-
 #endif
