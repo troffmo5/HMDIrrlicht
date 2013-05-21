@@ -29,7 +29,7 @@ using namespace std;
 static const char* vertexShader =
 "void main() {"
 "  gl_Position = vec4(gl_Vertex.xy, 0.0, 1.0);"
-"  gl_TexCoord[0].st = gl_MultiTexCoord0;"
+"  gl_TexCoord[0].st = gl_MultiTexCoord0.st;"
 "}";
 
 static const char *fragShader =
